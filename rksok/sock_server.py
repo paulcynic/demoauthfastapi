@@ -7,7 +7,7 @@ logger.add("server.log", format="{time} {level} {message}", level="INFO", rotati
 
 """Some constant variables of the socket server"""
 localhost = "cointrack.ru"
-HOST = "0.0.0.0"
+HOST = ""
 PORT = int(43210)
 HOST_KGB = "vragi-vezde.to.digital"
 PORT_KGB = int(51624)
@@ -31,6 +31,7 @@ command = {
 """These three lines of code create a socket on the server"""
 try:
     serv_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    serv_sock = socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     serv_sock.bind((HOST, PORT))
     serv_sock.listen(10)
     logger.info(f"Server {localhost} {PORT} is running...")
