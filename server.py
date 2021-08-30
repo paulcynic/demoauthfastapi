@@ -1,3 +1,4 @@
+import requests
 import hmac
 import hashlib
 import base64
@@ -12,6 +13,14 @@ app = FastAPI()
 
 SECRET_KEY = "672b65de9006fa8d1687b39d85eba84c9decdbc8663381884c9722be151c1a2b"
 PASSWORD_SALT = "9cdc7437bc56ba94397067033b60b260593a72ef8cc2b2d47909c42425aaa310"
+
+
+def phone_mask(raw_phone: str) -> str:
+    num = "".join(filter(str.isdigit, raw_phone))
+    if len(num) < 10 or len(num) > 11 or num[-10] != '9':
+        return num
+    phone = "8 (9{}{}) {}{}{}-{}{}-{}{}".format(*num[-9:])
+    return phone
 
 
 def sign_data(data: str) -> str:
@@ -94,3 +103,43 @@ def process_login_page(data: dict = Body(...)):
     response.set_cookie(key="username", value=username_signed)
     return response
 
+
+@app.post("/unify_phone_from_json")
+def phone_from_json(phone_from_body: dict = Body(...)):
+    raw_phone = phone_from_body["phone"]
+    phone = phone_mask(raw_phone)
+    return Response(phone)
+
+
+@app.post("/unify_phone_from_form")
+def phone_from_form(phone: str = Form(...)):
+    raw_phone = phone
+    resp_phone = phone_mask(raw_phone)
+    return Response(resp_phone)
+
+
+@app.get("/unify_phone_from_query")
+def phone_from_query(phone: Optional[str] = None):
+    raw_phone = phone
+    resp_phone = phone_mask(raw_phone)
+    return Response(resp_phone)
+
+
+@app.get("/unify_phone_from_cookies")
+def phone_from_cookies(phone: Optional[str] = Cookie(default=None)):
+    resp_phone = phone_mask(phone)
+    return Response(resp_phone)
+
+@app.get("/coin")
+def request_coin():
+    with open('templates/form.html', 'r') as f:
+        form_page = f.read()
+    return Response(form_page)
+
+@app.post("/request/coin")
+def request_coin(coin: str = Form(...), currency: str = Form(...)):
+    print(coin, currency)
+    payload = {'ids': coin, 'vs_currencies': currency}
+    r = requests.get('https://api.coingecko.com/api/v3/simple/price', params=payload)
+    print(r.json())
+    return r.json()
